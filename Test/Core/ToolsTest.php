@@ -20,6 +20,7 @@
 namespace FacturaScripts\Test\Core;
 
 use FacturaScripts\Core\App\AppSettings;
+use FacturaScripts\Core\DataSrc\Divisas;
 use FacturaScripts\Core\Model\Settings;
 use FacturaScripts\Core\Tools;
 use FacturaScripts\Dinamic\Model\Divisa;
@@ -52,10 +53,10 @@ final class ToolsTest extends TestCase
         $dateTime = '01-01-2019 12:00:00';
         $time2 = strtotime($dateTime);
 
-        $date3 = '2020-10-07';
+        $date3 = '2020/10/07';
         $tim3 = strtotime($date3);
 
-        $dateTime2 = '2020-05-17 12:00:00';
+        $dateTime2 = '2020/05/17 12:00:00';
         $time4 = strtotime($dateTime2);
 
         $this->assertEquals($date, Tools::date($date));
@@ -283,5 +284,41 @@ final class ToolsTest extends TestCase
         $this->assertEquals('1.23', Tools::number(1.234, 2));
         $this->assertEquals('1.234', Tools::number(1.234, 3));
         $this->assertEquals('1.23', Tools::number(1.234, 2));
+    }
+
+    public function testNumberFunctions(): void
+    {
+        Tools::settingsSet('default', 'decimals', 2);
+        Tools::settingsSet('default', 'decimal_separator', ',');
+        Tools::settingsSet('default', 'thousands_separator', '_');
+        $this->assertEquals('1,00', Tools::number(1));
+        $this->assertEquals('1,00', Tools::number(1.00));
+        $this->assertEquals('12_345,67', Tools::number(12345.67));
+        $this->assertEquals('12_345,670', Tools::number(12345.67, 3));
+        $this->assertEquals('12_345,67', Tools::number(12345.67, 2));
+        $this->assertEquals('12_345,7', Tools::number(12345.67, 1));
+        $this->assertEquals('12_346', Tools::number(12345.67, 0));
+
+        Tools::settingsSet('default', 'decimals', 1);
+        Tools::settingsSet('default', 'decimal_separator', '.');
+        Tools::settingsSet('default', 'thousands_separator', ' ');
+        $this->assertEquals('1.0', Tools::number(1));
+        $this->assertEquals('1 234.6', Tools::number(1234.56));
+        $this->assertEquals('1 234.5670', Tools::number(1234.567, 4));
+
+        Tools::settingsSet('default', 'coddivisa', 'EUR');
+        Tools::settingsSet('default', 'currency_position', 'right');
+        $this->assertEquals('1.0 €', Tools::money(1));
+        $this->assertEquals('23 456.8 €', Tools::money(23456.78));
+        $this->assertEquals('23 456.8 ?', Tools::money(23456.78, '?'));
+
+
+        Tools::settingsSet('default', 'decimals', 2);
+        $symbol = Divisas::get('USD')->simbolo ?? '?';
+        Tools::settingsSet('default', 'coddivisa', 'USD');
+        Tools::settingsSet('default', 'currency_position', 'left');
+        $this->assertEquals($symbol . ' 1.00', Tools::money(1));
+        $this->assertEquals($symbol . ' 23 456.78', Tools::money(23456.78));
+        $this->assertEquals('€ 23 456.78', Tools::money(23456.78, 'EUR'));
     }
 }
